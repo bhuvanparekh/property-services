@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a3558'/%3E%3Ctext y='22' x='16' text-anchor='middle' font-family='Segoe UI,Arial,sans-serif' font-weight='800' font-size='14' fill='white'%3EPS%3C/text%3E%3C/svg%3E">
+  <title>My Requests — Property Services</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .detail-panel { display:none; background:white; border-radius:10px; padding:28px; box-shadow:0 2px 12px rgba(0,0,0,0.06); margin-top:20px; }
+    .detail-panel.open { display:block; }
+    .close-panel { float:right; background:none; font-size:18px; color:#999; }
+    .close-panel:hover { color:#333; }
+    .filter-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+    .filter-tab { padding:6px 14px; border-radius:20px; font-size:13px; background:#f0f0f0; color:#555; cursor:pointer; border:none; transition:all 0.2s; }
+    .filter-tab.active { background:#1e3a5f; color:white; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <a href="dashboard.html" class="logo-link">
+          <div class="logo-icon">PS</div>
+          <div class="logo-text">PROPERTY SERVICES</div>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><span class="nav-icon">🏠</span> Dashboard</a>
+        <a href="my-properties.html"><span class="nav-icon">🏗️</span> My Properties</a>
+        <a href="service-apply.html"><span class="nav-icon">📋</span> Apply for Service</a>
+        <a href="my-requests.html" class="active"><span class="nav-icon">📊</span> My Requests</a>
+      </nav>
+      <button class="logout-btn" onclick="logout()"><span>🚪</span> Logout</button>
+    </aside>
+
+    <main class="main-content">
+      <div class="content-header">
+        <h1>My Service Requests</h1>
+        <div class="user-chip">
+          <div class="avatar" id="userAvatar">?</div>
+        </div>
+      </div>
+
+      <div class="content-body">
+        <!-- Filter tabs -->
+        <div class="filter-tabs">
+          <button class="filter-tab active" onclick="filterReqs(this,'all')">All</button>
+          <button class="filter-tab" onclick="filterReqs(this,'requested')">Requested</button>
+          <button class="filter-tab" onclick="filterReqs(this,'started')">Started</button>
+          <button class="filter-tab" onclick="filterReqs(this,'in_progress')">In Progress</button>
+          <button class="filter-tab" onclick="filterReqs(this,'completed')">Completed</button>
+        </div>
+
+        <div id="requestList"></div>
+
+        <!-- Detail Panel -->
+        <div class="detail-panel" id="detailPanel">
+          <button class="close-panel" onclick="closeDetail()">✕</button>
+          <div id="detailContent"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script>
+    const user = getCurrentUser();
+    if (!user || user.role === 'admin') window.location.href = 'auth.html';
+    document.getElementById('userAvatar').textContent = initials(user.name || user.email);
+
+    let allReqs = [];
+    let currentFilter = 'all';
+
+    function load() {
+      allReqs = getUserServiceRequests(user.id);
+      render();
+    }
+
+    function render() {
+      const filtered = currentFilter === 'all' ? allReqs : allReqs.filter(r => r.status === currentFilter);
+      const el = document.getElementById('requestList');
+      if (!filtered.length) {
+        el.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span>
+          <h3>No requests found</h3><p>Apply for a service to get started</p><br>
+          <button class="btn-primary" onclick="window.location.href='service-apply.html'">Apply for Service</button></div>`;
+        return;
+      }
+      el.innerHTML = filtered.sort((a,b) => b.id - a.id).map(r => {
+        const prop = getPropertyById(r.propertyId);
+        return `
+          <div class="request-card" onclick="showDetail(${r.id})">
+            <div class="request-info">
+              <h4>${r.serviceType}</h4>
+              <p>${prop ? prop.name : '—'} &bull; Applied ${formatDate(r.appliedAt)} &bull; Ref #PS-${String(r.id).padStart(4,'0')}</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              ${statusBadge(r.status)}
+              <span style="font-size:18px;color:#ccc;">›</span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function filterReqs(el, status) {
+      document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      currentFilter = status;
+      render();
+      closeDetail();
+    }
+
+    function showDetail(id) {
+      const r = allReqs.find(x => x.id === id);
+      if (!r) return;
+      const prop = getPropertyById(r.propertyId);
+      const steps = ['requested','started','in_progress','completed'];
+      const stepLabels = { requested:'Requested', started:'Started', in_progress:'In Progress', completed:'Completed' };
+      const stepIcons = { requested:'📩', started:'🔍', in_progress:'⚙️', completed:'✅' };
+      const currentIdx = steps.indexOf(r.status);
+      const fillPct = currentIdx === 0 ? 0 : (currentIdx / (steps.length - 1)) * 100;
+
+      const stepsHtml = steps.map((s, i) => {
+        const cls = i < currentIdx ? 'done' : (i === currentIdx ? 'active' : '');
+        const histEntry = r.statusHistory.find(h => h.status === s);
+        return `<div class="tracker-step">
+          <div class="step-circle ${cls}">${stepIcons[s]}</div>
+          <div class="step-label ${cls}">${stepLabels[s]}</div>
+          <div class="step-date">${histEntry ? formatDate(histEntry.date) : ''}</div>
+        </div>`;
+      }).join('');
+
+      const historyHtml = [...r.statusHistory].reverse().map(h => `
+        <div class="history-item">
+          <h5>${stepLabels[h.status] || h.status}</h5>
+          ${h.note ? `<p>${h.note}</p>` : ''}
+          <span class="h-date">${formatDate(h.date)}</span>
+        </div>`).join('');
+
+      const detailsHtml = r.details && Object.keys(r.details).length
+        ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:4px;">
+            ${Object.entries(r.details).filter(([,v])=>v).map(([k,v]) =>
+              `<div><div style="font-size:11px;color:#aaa;text-transform:capitalize;">${k.replace(/([A-Z])/g,' $1')}</div>
+               <div style="font-size:13px;font-weight:500;">${v}</div></div>`).join('')}
+          </div>` : '<p style="font-size:13px;color:#aaa;">No additional details</p>';
+
+      document.getElementById('detailContent').innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <h2 style="font-size:20px;color:#1e3a5f;margin-bottom:4px;">${r.serviceType}</h2>
+            <p style="font-size:13px;color:#aaa;">Ref #PS-${String(r.id).padStart(4,'0')} &bull; ${prop ? prop.name : '—'}</p>
+          </div>
+          ${statusBadge(r.status)}
+        </div>
+
+        <h4 style="font-size:13px;color:#1e3a5f;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Progress</h4>
+        <div class="progress-tracker" style="position:relative;margin-bottom:24px;">
+          <div class="tracker-line-bg"></div>
+          <div class="tracker-line-fill" style="width:calc(${fillPct * 0.8}%)"></div>
+          ${stepsHtml}
+        </div>
+
+        <h4 style="font-size:13px;color:#1e3a5f;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">Timeline</h4>
+        <div class="history-list" style="margin-bottom:20px;">${historyHtml}</div>
+
+        <h4 style="font-size:13px;color:#1e3a5f;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">Application Details</h4>
+        ${detailsHtml}
+
+        ${r.documents && r.documents.length ? `
+          <h4 style="font-size:13px;color:#1e3a5f;margin-top:18px;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Documents Submitted</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            ${r.documents.map(d => `<span style="background:#f0f4ff;padding:4px 10px;border-radius:4px;font-size:12px;color:#1e3a5f;">✓ ${d}</span>`).join('')}
+          </div>` : ''}`;
+
+      document.getElementById('detailPanel').classList.add('open');
+      document.getElementById('detailPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function closeDetail() {
+      document.getElementById('detailPanel').classList.remove('open');
+    }
+
+    load();
+  </script>
+</body>
+</html>

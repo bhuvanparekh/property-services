@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a3558'/%3E%3Ctext y='22' x='16' text-anchor='middle' font-family='Segoe UI,Arial,sans-serif' font-weight='800' font-size='14' fill='white'%3EPS%3C/text%3E%3C/svg%3E">
+  <title>Apply for Service — Property Services</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <a href="dashboard.html" class="logo-link">
+          <div class="logo-icon">PS</div>
+          <div class="logo-text">PROPERTY SERVICES</div>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><span class="nav-icon">🏠</span> Dashboard</a>
+        <a href="my-properties.html"><span class="nav-icon">🏗️</span> My Properties</a>
+        <a href="service-apply.html" class="active"><span class="nav-icon">📋</span> Apply for Service</a>
+        <a href="my-requests.html"><span class="nav-icon">📊</span> My Requests</a>
+      </nav>
+      <button class="logout-btn" onclick="logout()"><span>🚪</span> Logout</button>
+    </aside>
+
+    <main class="main-content">
+      <div class="content-header">
+        <h1>Apply for Service</h1>
+        <div class="user-chip">
+          <div class="avatar" id="userAvatar">?</div>
+          <span id="userName"></span>
+        </div>
+      </div>
+
+      <div class="content-body">
+        <div class="page-container">
+
+          <!-- Step Indicator -->
+          <div class="step-indicator">
+            <div class="step-pill active" id="pill1">1. Select Service</div>
+            <div class="step-pill" id="pill2">2. Property &amp; Details</div>
+            <div class="step-pill" id="pill3">3. Documents</div>
+            <div class="step-pill" id="pill4">4. Confirm</div>
+          </div>
+
+          <!-- STEP 1: Select Service -->
+          <div id="step1">
+            <div class="form-card">
+              <h3>Select a Service</h3>
+              <div class="form-group">
+                <label>Service Type *</label>
+                <select class="form-input" id="serviceSelect" onchange="onServiceSelect()">
+                  <option value="">-- Choose a service --</option>
+                  <option>Property Registration</option>
+                  <option>Rental Agreement</option>
+                  <option>Encumbrance Certificate</option>
+                  <option>Property Mutation</option>
+                  <option>Property Tax Payment</option>
+                  <option>Society NOC</option>
+                  <option>Legal Title Verification</option>
+                  <option>Property Valuation</option>
+                </select>
+              </div>
+              <div id="svcDesc" style="display:none;" class="service-desc-box"></div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-primary" id="step1Next" onclick="goStep(2)" disabled>Next &rarr;</button>
+            </div>
+          </div>
+
+          <!-- STEP 2: Property + Details -->
+          <div id="step2" style="display:none;">
+            <div class="form-card">
+              <h3>Select Property</h3>
+              <div class="form-group">
+                <label>Property *</label>
+                <select class="form-input" id="propSelect">
+                  <option value="">-- Select property --</option>
+                </select>
+              </div>
+              <p style="font-size:12px;color:#aaa;margin-top:-10px;">
+                Don't see your property? <a href="my-properties.html" style="color:#e85d04;">Add it here</a>
+              </p>
+            </div>
+            <div class="form-card" id="detailsCard" style="display:none;">
+              <h3>Service Details</h3>
+              <div class="form-grid" id="dynamicFields"></div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-outline" onclick="goStep(1)">&larr; Back</button>
+              <button class="btn-primary" onclick="goStep(3)">Next &rarr;</button>
+            </div>
+          </div>
+
+          <!-- STEP 3: Documents -->
+          <div id="step3" style="display:none;">
+            <div class="form-card">
+              <h3>Required Documents</h3>
+              <p style="font-size:13px;color:#666;margin-bottom:16px;">
+                Please confirm you have the following documents ready for submission. Check each item.
+              </p>
+              <div class="doc-checklist" id="docChecklist"></div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-outline" onclick="goStep(2)">&larr; Back</button>
+              <button class="btn-primary" onclick="goStep(4)">Next &rarr;</button>
+            </div>
+          </div>
+
+          <!-- STEP 4: Review & Confirm -->
+          <div id="step4" style="display:none;">
+            <div class="form-card" id="reviewCard"></div>
+            <div class="form-actions">
+              <button class="btn-outline" onclick="goStep(3)">&larr; Back</button>
+              <button class="btn-primary" onclick="submitRequest()">Apply Now ✓</button>
+            </div>
+          </div>
+
+          <!-- SUCCESS -->
+          <div id="successScreen" style="display:none;text-align:center;padding:40px 20px;">
+            <div style="font-size:70px;margin-bottom:16px;">🎉</div>
+            <h2 style="font-size:24px;color:#1e3a5f;margin-bottom:10px;">Application Submitted!</h2>
+            <p style="color:#888;font-size:15px;margin-bottom:6px;">Your service request has been received.</p>
+            <p style="color:#888;font-size:13px;margin-bottom:28px;">Reference ID: <strong id="refId"></strong></p>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+              <button class="btn-outline" onclick="window.location.href='my-requests.html'">View My Requests</button>
+              <button class="btn-primary" onclick="window.location.reload()">Apply for Another</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script>
+    const user = getCurrentUser();
+    if (!user || user.role === 'admin') window.location.href = 'auth.html';
+    document.getElementById('userAvatar').textContent = initials(user.name || user.email);
+    document.getElementById('userName').textContent = user.name || user.email;
+
+    let currentStep = 1;
+    let selectedService = '';
+    let collectedDetails = {};
+    let checkedDocs = [];
+
+    // Pre-fill service if coming from homepage or property view
+    const pendingService = localStorage.getItem('ps_pending_service');
+    const presetPropId = localStorage.getItem('ps_apply_prop');
+    if (pendingService) {
+      document.getElementById('serviceSelect').value = pendingService;
+      onServiceSelect();
+    }
+
+    // Populate property dropdown
+    function loadProps() {
+      const props = getUserProperties(user.id);
+      const sel = document.getElementById('propSelect');
+      sel.innerHTML = '<option value="">-- Select property --</option>';
+      props.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name + ' (' + p.type + ')';
+        if (presetPropId && p.id == presetPropId) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      if (props.length === 0) {
+        sel.innerHTML += '<option disabled>No properties — add one first</option>';
+      }
+    }
+
+    document.getElementById('propSelect').addEventListener('change', function() {
+      if (this.value) {
+        document.getElementById('detailsCard').style.display = 'block';
+      }
+    });
+
+    function onServiceSelect() {
+      selectedService = document.getElementById('serviceSelect').value;
+      const btn = document.getElementById('step1Next');
+      const desc = document.getElementById('svcDesc');
+      if (selectedService && SERVICES_DATA[selectedService]) {
+        btn.disabled = false;
+        desc.style.display = 'block';
+        desc.textContent = SERVICES_DATA[selectedService].description;
+      } else {
+        btn.disabled = true;
+        desc.style.display = 'none';
+      }
+    }
+
+    function buildDynamicFields() {
+      const svc = SERVICES_DATA[selectedService];
+      if (!svc) return;
+      const container = document.getElementById('dynamicFields');
+      container.innerHTML = svc.fields.map(f => `
+        <div class="form-group ${f.name === 'notes' ? 'full' : ''}">
+          <label>${f.label}${f.required ? ' *' : ''}</label>
+          ${f.type === 'textarea'
+            ? `<textarea class="form-input" id="df_${f.name}" placeholder="Enter ${f.label.toLowerCase()}"></textarea>`
+            : `<input type="${f.type}" class="form-input" id="df_${f.name}" placeholder="Enter ${f.label.toLowerCase()}">`
+          }
+        </div>`).join('');
+    }
+
+    function buildDocChecklist() {
+      const svc = SERVICES_DATA[selectedService];
+      if (!svc) return;
+      document.getElementById('docChecklist').innerHTML = svc.documents.map((doc, i) => `
+        <div class="doc-item">
+          <input type="checkbox" class="doc-check" id="doc_${i}" value="${doc.name}">
+          <label for="doc_${i}">${doc.name}</label>
+          ${doc.required ? '<span class="doc-tag">Required</span>' : '<span style="font-size:11px;color:#aaa;">Optional</span>'}
+        </div>`).join('');
+    }
+
+    function buildReview() {
+      const propId = document.getElementById('propSelect').value;
+      const prop = getPropertyById(propId);
+      const svc = SERVICES_DATA[selectedService];
+
+      // Collect details
+      collectedDetails = {};
+      svc.fields.forEach(f => {
+        const el = document.getElementById('df_' + f.name);
+        if (el) collectedDetails[f.name] = el.value;
+      });
+
+      // Collect checked docs
+      checkedDocs = [];
+      document.querySelectorAll('#docChecklist .doc-check:checked').forEach(cb => {
+        checkedDocs.push(cb.value);
+      });
+
+      document.getElementById('reviewCard').innerHTML = `
+        <h3>Review Your Application</h3>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="background:#f0f4ff;border-radius:6px;padding:16px;">
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Service</div>
+            <div style="font-size:16px;font-weight:600;color:#1e3a5f;">${selectedService}</div>
+          </div>
+          <div style="background:#f0f4ff;border-radius:6px;padding:16px;">
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Property</div>
+            <div style="font-size:15px;font-weight:600;color:#1e3a5f;">${prop ? prop.name : 'Not selected'}</div>
+            <div style="font-size:13px;color:#888;">${prop ? prop.address : ''}</div>
+          </div>
+          <div style="background:#f0f4ff;border-radius:6px;padding:16px;">
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Service Details</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;">
+              ${Object.entries(collectedDetails).filter(([,v]) => v).map(([k,v]) => {
+                const field = svc.fields.find(f => f.name === k);
+                return `<div><div style="font-size:11px;color:#aaa;">${field ? field.label : k}</div><div style="font-size:13px;font-weight:500;">${v}</div></div>`;
+              }).join('')}
+            </div>
+          </div>
+          ${checkedDocs.length > 0 ? `
+          <div style="background:#f0f4ff;border-radius:6px;padding:16px;">
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Documents Confirmed (${checkedDocs.length})</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${checkedDocs.map(d => `<div style="font-size:13px;color:#333;">✓ ${d}</div>`).join('')}
+            </div>
+          </div>` : ''}
+        </div>`;
+    }
+
+    function goStep(n) {
+      if (n === 2) {
+        selectedService = document.getElementById('serviceSelect').value;
+        if (!selectedService) { alert('Please select a service.'); return; }
+        loadProps();
+        buildDynamicFields();
+        if (presetPropId) { document.getElementById('detailsCard').style.display = 'block'; }
+      }
+      if (n === 3) {
+        if (!document.getElementById('propSelect').value) { alert('Please select a property.'); return; }
+        buildDocChecklist();
+      }
+      if (n === 4) { buildReview(); }
+
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('step' + i);
+        if (el) el.style.display = i === n ? 'block' : 'none';
+        const pill = document.getElementById('pill' + i);
+        if (pill) {
+          pill.className = 'step-pill';
+          if (i === n) pill.classList.add('active');
+          else if (i < n) pill.classList.add('done');
+        }
+      }
+      currentStep = n;
+    }
+
+    function submitRequest() {
+      const propId = parseInt(document.getElementById('propSelect').value);
+      if (!propId) { alert('Please select a property.'); return; }
+      const req = addServiceRequest({
+        userId: user.id,
+        propertyId: propId,
+        serviceType: selectedService,
+        details: collectedDetails,
+        documents: checkedDocs
+      });
+      localStorage.removeItem('ps_pending_service');
+      localStorage.removeItem('ps_apply_prop');
+      // Hide all steps, show success
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('step' + i);
+        if (el) el.style.display = 'none';
+      }
+      document.getElementById('step-indicator') && (document.getElementById('step-indicator').style.display = 'none');
+      document.getElementById('successScreen').style.display = 'block';
+      document.getElementById('refId').textContent = 'PS-' + String(req.id).padStart(4, '0');
+    }
+  </script>
+</body>
+</html>

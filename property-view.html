@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a3558'/%3E%3Ctext y='22' x='16' text-anchor='middle' font-family='Segoe UI,Arial,sans-serif' font-weight='800' font-size='14' fill='white'%3EPS%3C/text%3E%3C/svg%3E">
+  <title>Property Details — Property Services</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .prop-detail-card { background:white; border-radius:10px; padding:28px; box-shadow:0 2px 12px rgba(0,0,0,0.06); margin-bottom:24px; }
+    .prop-header { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #f0f0f0; }
+    .prop-header h2 { font-size:22px; color:#1e3a5f; margin-bottom:4px; }
+    .prop-header p { font-size:13px; color:#888; }
+    .prop-details-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:16px; }
+    .detail-item label { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:#aaa; font-weight:600; display:block; margin-bottom:4px; }
+    .detail-item span { font-size:14px; color:#333; font-weight:500; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <a href="dashboard.html" class="logo-link">
+          <div class="logo-icon">PS</div>
+          <div class="logo-text">PROPERTY SERVICES</div>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><span class="nav-icon">🏠</span> Dashboard</a>
+        <a href="my-properties.html" class="active"><span class="nav-icon">🏗️</span> My Properties</a>
+        <a href="service-apply.html"><span class="nav-icon">📋</span> Apply for Service</a>
+        <a href="my-requests.html"><span class="nav-icon">📊</span> My Requests</a>
+      </nav>
+      <button class="logout-btn" onclick="logout()"><span>🚪</span> Logout</button>
+    </aside>
+
+    <main class="main-content">
+      <div class="content-header">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <a href="my-properties.html" style="color:#1e3a5f;font-size:20px;">&#8592;</a>
+          <h1 id="pageTitle">Property Details</h1>
+        </div>
+        <div class="user-chip">
+          <div class="avatar" id="userAvatar">?</div>
+        </div>
+      </div>
+
+      <div class="content-body">
+        <div id="propContent"></div>
+        <div id="reqSection"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script>
+    const user = getCurrentUser();
+    if (!user || user.role === 'admin') window.location.href = 'auth.html';
+    document.getElementById('userAvatar').textContent = initials(user.name || user.email);
+
+    const params = new URLSearchParams(window.location.search);
+    const propId = parseInt(params.get('id'));
+    const prop = getPropertyById(propId);
+
+    if (!prop || prop.userId !== user.id) {
+      document.getElementById('propContent').innerHTML = '<p style="color:#888;">Property not found.</p>';
+    } else {
+      document.getElementById('pageTitle').textContent = prop.name;
+
+      document.getElementById('propContent').innerHTML = `
+        <div class="prop-detail-card">
+          <div class="prop-header">
+            <div>
+              <div class="prop-type">${prop.type}</div>
+              <h2>${prop.name}</h2>
+              <p>${prop.address}</p>
+            </div>
+            <button class="btn-primary" style="font-size:13px;padding:8px 18px;" onclick="applyForProp(${prop.id})">+ Apply for Service</button>
+          </div>
+          <div class="prop-details-grid">
+            <div class="detail-item"><label>Owner</label><span>${prop.ownerName || '—'}</span></div>
+            <div class="detail-item"><label>Area</label><span>${prop.area || '—'}</span></div>
+            <div class="detail-item"><label>Survey Number</label><span>${prop.surveyNumber || '—'}</span></div>
+            <div class="detail-item"><label>Village</label><span>${prop.village || '—'}</span></div>
+            <div class="detail-item"><label>District</label><span>${prop.district || '—'}</span></div>
+            <div class="detail-item"><label>State</label><span>${prop.state || '—'}</span></div>
+            <div class="detail-item"><label>PIN Code</label><span>${prop.pincode || '—'}</span></div>
+            <div class="detail-item"><label>Added On</label><span>${formatDate(prop.createdAt)}</span></div>
+          </div>
+        </div>`;
+
+      // Load service requests for this property
+      const reqs = getServiceRequests().filter(r => r.propertyId === prop.id && r.userId === user.id);
+
+      let reqHtml = `<div class="section-header"><h2>Services for this Property</h2></div>`;
+      if (!reqs.length) {
+        reqHtml += `<div class="empty-state"><span class="empty-icon">📋</span><h3>No services applied yet</h3>
+          <p>Apply for a service for this property</p><br>
+          <button class="btn-primary" onclick="applyForProp(${prop.id})">Apply for Service</button></div>`;
+      } else {
+        reqHtml += reqs.map(r => buildProgressCard(r)).join('');
+      }
+      document.getElementById('reqSection').innerHTML = reqHtml;
+    }
+
+    function applyForProp(propId) {
+      localStorage.setItem('ps_apply_prop', propId);
+      window.location.href = 'service-apply.html';
+    }
+
+    function buildProgressCard(r) {
+      const steps = ['requested','started','in_progress','completed'];
+      const stepLabels = { requested:'Requested', started:'Started', in_progress:'In Progress', completed:'Completed' };
+      const stepIcons = { requested:'📩', started:'🔍', in_progress:'⚙️', completed:'✅' };
+      const currentIdx = steps.indexOf(r.status);
+      const fillPct = currentIdx === 0 ? 0 : (currentIdx / (steps.length - 1)) * 100;
+
+      const stepsHtml = steps.map((s, i) => {
+        const cls = i < currentIdx ? 'done' : (i === currentIdx ? 'active' : '');
+        const histEntry = r.statusHistory.find(h => h.status === s);
+        return `
+          <div class="tracker-step">
+            <div class="step-circle ${cls}">${stepIcons[s]}</div>
+            <div class="step-label ${cls}">${stepLabels[s]}</div>
+            <div class="step-date">${histEntry ? formatDate(histEntry.date) : ''}</div>
+          </div>`;
+      }).join('');
+
+      const lastNote = r.statusHistory[r.statusHistory.length - 1];
+      return `
+        <div class="prop-detail-card" style="cursor:default;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+            <div>
+              <h3 style="font-size:16px;color:#1e3a5f;">${r.serviceType}</h3>
+              <p style="font-size:12px;color:#aaa;">Applied ${formatDate(r.appliedAt)} &bull; Ref #${r.id}</p>
+            </div>
+            ${statusBadge(r.status)}
+          </div>
+          <div class="progress-tracker" style="position:relative;">
+            <div class="tracker-line-bg"></div>
+            <div class="tracker-line-fill" style="width:calc(${fillPct}% - 40px * ${fillPct}/100 + ${fillPct > 0 ? '0px' : '0px'})"></div>
+            ${stepsHtml}
+          </div>
+          ${lastNote && lastNote.note ? `<p style="font-size:13px;color:#666;margin-top:10px;padding:10px 14px;background:#f8fafc;border-radius:6px;border-left:3px solid #1e3a5f;">📌 ${lastNote.note}</p>` : ''}
+        </div>`;
+    }
+  </script>
+</body>
+</html>

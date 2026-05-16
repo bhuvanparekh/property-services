@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a3558'/%3E%3Ctext y='22' x='16' text-anchor='middle' font-family='Segoe UI,Arial,sans-serif' font-weight='800' font-size='14' fill='white'%3EPS%3C/text%3E%3C/svg%3E">
+  <title>Users — Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <a href="admin.html" class="logo-link">
+          <div class="logo-icon">PS</div>
+          <div class="logo-text">PROPERTY SERVICES</div>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="admin.html"><span class="nav-icon">📊</span> All Requests</a>
+        <a href="admin-users.html" class="active"><span class="nav-icon">👥</span> Users</a>
+      </nav>
+      <button class="logout-btn" onclick="logout()"><span>🚪</span> Logout</button>
+    </aside>
+    <main class="main-content">
+      <div class="content-header">
+        <h1>Users</h1>
+        <div class="user-chip"><div class="avatar">AD</div><span>Admin</span></div>
+      </div>
+      <div class="content-body">
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Properties</th><th>Requests</th></tr></thead>
+            <tbody id="usersBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="js/data.js"></script>
+  <script>
+    const admin = getCurrentUser();
+    if (!admin || admin.role !== 'admin') window.location.href = 'auth.html';
+    const users = getUsers().filter(u => u.role !== 'admin');
+    const allProps = getProperties();
+    const allReqs = getServiceRequests();
+    document.getElementById('usersBody').innerHTML = users.map(u => {
+      const props = allProps.filter(p => p.userId === u.id).length;
+      const reqs = allReqs.filter(r => r.userId === u.id).length;
+      return `<tr>
+        <td>#${u.id}</td>
+        <td><strong>${u.name || 'Unnamed'}</strong></td>
+        <td>${u.phone}</td>
+        <td>${props}</td>
+        <td>${reqs}</td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="5" style="text-align:center;padding:40px;color:#aaa;">No users yet</td></tr>`;
+  </script>
+</body>
+</html>

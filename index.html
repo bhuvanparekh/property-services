@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Property Services — Home</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a3558'/%3E%3Ctext y='22' x='16' text-anchor='middle' font-family='Segoe UI,Arial,sans-serif' font-weight='800' font-size='14' fill='white'%3EPS%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <a href="index.html" class="logo logo-link">
+      <div class="logo-icon">PS</div>
+      <span class="logo-text">PROPERTY SERVICES</span>
+    </a>
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+      <a href="auth.html" class="login-btn" id="loginNavBtn">Login</a>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-tag">✦ Trusted Property Services Platform</div>
+      <h1 class="hero-title">Your Property,<br>Our <span>Expertise</span></h1>
+      <p class="hero-sub">Fast, transparent, and expert-handled property documentation, registration, and legal services — all in one place.</p>
+
+      <div class="service-tabs">
+        <button class="tab-btn active" onclick="filterTab(this,'all')">All Services</button>
+        <button class="tab-btn" onclick="filterTab(this,'registration')">Registration</button>
+        <button class="tab-btn" onclick="filterTab(this,'legal')">Legal &amp; Certs</button>
+        <button class="tab-btn" onclick="filterTab(this,'rental')">Rental</button>
+        <button class="tab-btn" onclick="filterTab(this,'tax')">Tax &amp; NOC</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Service Card -->
+  <div class="service-card-wrapper">
+    <div class="service-card">
+      <div class="service-card-head">
+        <h3>Get Started — Select a Service</h3>
+        <p>Choose the property service you need and we'll guide you through the process</p>
+      </div>
+      <div class="service-row">
+        <label>I need help with</label>
+        <select id="serviceDropdown" class="select-dropdown" onchange="onServiceChange()">
+          <option value="">-- Choose a Service --</option>
+          <option value="Property Registration" data-cat="registration">Property Registration</option>
+          <option value="Rental Agreement" data-cat="rental">Rental Agreement</option>
+          <option value="Encumbrance Certificate" data-cat="legal">Encumbrance Certificate</option>
+          <option value="Property Mutation" data-cat="registration">Property Mutation / Name Transfer</option>
+          <option value="Property Tax Payment" data-cat="tax">Property Tax Payment</option>
+          <option value="Society NOC" data-cat="tax">Society NOC</option>
+          <option value="Legal Title Verification" data-cat="legal">Legal Title Verification</option>
+          <option value="Property Valuation" data-cat="legal">Property Valuation</option>
+        </select>
+        <button class="btn-primary" id="nextBtn" onclick="goNext()" disabled>Get Started &rarr;</button>
+      </div>
+      <div class="service-desc-box" id="serviceDesc"></div>
+    </div>
+  </div>
+
+  <!-- Services Grid -->
+  <div class="info-section">
+    <h2 class="section-title">Our Services</h2>
+    <p class="section-sub">Comprehensive property services handled by experts — fast, reliable, and fully transparent.</p>
+    <div class="services-grid" id="servicesGrid">
+      <div class="service-item" data-cat="registration" onclick="pick('Property Registration')">
+        <div class="si-icon-wrap"><span class="si-icon">📋</span></div><h4>Property Registration</h4>
+      </div>
+      <div class="service-item" data-cat="rental" onclick="pick('Rental Agreement')">
+        <div class="si-icon-wrap"><span class="si-icon">🏘️</span></div><h4>Rental Agreement</h4>
+      </div>
+      <div class="service-item" data-cat="legal" onclick="pick('Encumbrance Certificate')">
+        <div class="si-icon-wrap"><span class="si-icon">📜</span></div><h4>Encumbrance Certificate</h4>
+      </div>
+      <div class="service-item" data-cat="registration" onclick="pick('Property Mutation')">
+        <div class="si-icon-wrap"><span class="si-icon">🔄</span></div><h4>Property Mutation</h4>
+      </div>
+      <div class="service-item" data-cat="tax" onclick="pick('Property Tax Payment')">
+        <div class="si-icon-wrap"><span class="si-icon">💰</span></div><h4>Property Tax</h4>
+      </div>
+      <div class="service-item" data-cat="tax" onclick="pick('Society NOC')">
+        <div class="si-icon-wrap"><span class="si-icon">✅</span></div><h4>Society NOC</h4>
+      </div>
+      <div class="service-item" data-cat="legal" onclick="pick('Legal Title Verification')">
+        <div class="si-icon-wrap"><span class="si-icon">⚖️</span></div><h4>Legal Verification</h4>
+      </div>
+      <div class="service-item" data-cat="legal" onclick="pick('Property Valuation')">
+        <div class="si-icon-wrap"><span class="si-icon">📊</span></div><h4>Property Valuation</h4>
+      </div>
+    </div>
+  </div>
+
+  <!-- Why Us -->
+  <div class="why-section">
+    <h2 class="section-title">Why Choose Us?</h2>
+    <p class="section-sub">We make property paperwork simple, fast, and completely hassle-free.</p>
+    <div class="why-grid">
+      <div class="why-item"><span class="why-icon">🚀</span><h4>Fast Processing</h4><p>Most services completed within 7–15 working days with real-time status updates</p></div>
+      <div class="why-item"><span class="why-icon">📍</span><h4>Real-time Tracking</h4><p>Track your service status anytime, anywhere from your personal dashboard</p></div>
+      <div class="why-item"><span class="why-icon">🔒</span><h4>Secure & Confidential</h4><p>Your documents and personal data are handled with the highest level of security</p></div>
+      <div class="why-item"><span class="why-icon">🧑‍💼</span><h4>Expert Team</h4><p>Experienced legal and property specialists assigned to every case</p></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="logo">
+          <div class="logo-icon">PS</div>
+          <span class="logo-text">PROPERTY SERVICES</span>
+        </div>
+        <p>Your trusted partner for all property-related documentation, registration, and legal services across India.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Services</h4>
+        <ul>
+          <li><a href="#">Property Registration</a></li>
+          <li><a href="#">Rental Agreement</a></li>
+          <li><a href="#">Legal Verification</a></li>
+          <li><a href="#">Property Mutation</a></li>
+          <li><a href="#">Property Valuation</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Property Services. All rights reserved.</p>
+      <div class="footer-bottom-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="contact.html">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script>
+    // If logged in, show "Go to Dashboard" and update Login button
+    const cu = getCurrentUser();
+    if (cu) {
+      const btn = document.getElementById('loginNavBtn');
+      btn.textContent = cu.role === 'admin' ? 'Admin Dashboard' : 'My Dashboard';
+      btn.href = cu.role === 'admin' ? 'admin.html' : 'dashboard.html';
+    }
+
+    function filterTab(el, cat) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      document.querySelectorAll('#servicesGrid .service-item').forEach(item => {
+        item.style.display = (cat === 'all' || item.dataset.cat === cat) ? '' : 'none';
+      });
+    }
+
+    function onServiceChange() {
+      const val = document.getElementById('serviceDropdown').value;
+      const btn = document.getElementById('nextBtn');
+      const desc = document.getElementById('serviceDesc');
+      if (val && SERVICES_DATA[val]) {
+        btn.disabled = false;
+        desc.style.display = 'block';
+        desc.textContent = SERVICES_DATA[val].description;
+      } else {
+        btn.disabled = true;
+        desc.style.display = 'none';
+      }
+    }
+
+    function pick(service) {
+      document.getElementById('serviceDropdown').value = service;
+      onServiceChange();
+      document.querySelector('.service-card-wrapper').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function goNext() {
+      const service = document.getElementById('serviceDropdown').value;
+      if (!service) return;
+      localStorage.setItem('ps_pending_service', service);
+      const user = getCurrentUser();
+      if (user && user.role === 'user') {
+        window.location.href = 'service-apply.html';
+      } else if (user && user.role === 'admin') {
+        window.location.href = 'admin.html';
+      } else {
+        window.location.href = 'auth.html';
+      }
+    }
+  </script>
+</body>
+</html>

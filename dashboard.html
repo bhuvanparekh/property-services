@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Property Services</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a3558'/%3E%3Ctext y='22' x='16' text-anchor='middle' font-family='Segoe UI,Arial,sans-serif' font-weight='800' font-size='14' fill='white'%3EPS%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <a href="dashboard.html" class="logo-link">
+          <div class="logo-icon">PS</div>
+          <div class="logo-text">PROPERTY SERVICES</div>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="active"><span class="nav-icon">🏠</span> Dashboard</a>
+        <a href="my-properties.html"><span class="nav-icon">🏗️</span> My Properties</a>
+        <a href="service-apply.html"><span class="nav-icon">📋</span> Apply for Service</a>
+        <a href="my-requests.html"><span class="nav-icon">📊</span> My Requests</a>
+      </nav>
+      <button class="logout-btn" onclick="logout()"><span>🚪</span> Logout</button>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-content">
+      <div class="content-header">
+        <h1>Dashboard</h1>
+        <div class="user-chip">
+          <div class="avatar" id="userAvatar">?</div>
+          <span id="userName">Loading...</span>
+        </div>
+      </div>
+
+      <div class="content-body">
+        <!-- Welcome -->
+        <div style="margin-bottom:28px;">
+          <h2 style="font-size:20px;color:#1e3a5f;" id="welcomeMsg">Welcome back!</h2>
+          <p style="font-size:14px;color:#888;margin-top:4px;">Here's a summary of your property services.</p>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="card-grid">
+          <div class="dash-card" onclick="window.location.href='my-properties.html'">
+            <div class="card-icon">🏗️</div>
+            <h3>My Properties</h3>
+            <p>Manage your registered properties</p>
+            <div class="card-count" id="propCount">0</div>
+          </div>
+          <div class="dash-card" onclick="window.location.href='my-requests.html'">
+            <div class="card-icon">📋</div>
+            <h3>Service Requests</h3>
+            <p>Track all your service applications</p>
+            <div class="card-count" id="reqCount">0</div>
+          </div>
+          <div class="dash-card" onclick="window.location.href='service-apply.html'">
+            <div class="card-icon">➕</div>
+            <h3>Apply for Service</h3>
+            <p>Start a new service application</p>
+            <div style="margin-top:12px;font-size:13px;color:#e85d04;font-weight:600;">Get Started →</div>
+          </div>
+        </div>
+
+        <!-- Recent Requests -->
+        <div class="section-header">
+          <h2>Recent Service Requests</h2>
+          <a href="my-requests.html" style="font-size:13px;color:#e85d04;font-weight:600;">View All →</a>
+        </div>
+        <div id="recentRequests">
+          <div class="empty-state">
+            <span class="empty-icon">📭</span>
+            <h3>No service requests yet</h3>
+            <p>Apply for a service to get started</p>
+            <br>
+            <button class="btn-primary" onclick="window.location.href='service-apply.html'">Apply for Service</button>
+          </div>
+        </div>
+
+        <!-- My Properties Preview -->
+        <div class="section-header" style="margin-top:30px;">
+          <h2>My Properties</h2>
+          <a href="my-properties.html" style="font-size:13px;color:#e85d04;font-weight:600;">View All →</a>
+        </div>
+        <div class="property-list" id="propList">
+          <div class="empty-state">
+            <span class="empty-icon">🏠</span>
+            <h3>No properties added</h3>
+            <p>Add a property to manage your services</p>
+            <br>
+            <button class="btn-primary" onclick="window.location.href='my-properties.html'">Add Property</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script>
+    const user = getCurrentUser();
+    if (!user || user.role === 'admin') window.location.href = 'auth.html';
+
+    // Set user info
+    document.getElementById('userAvatar').textContent = initials(user.name || user.email);
+    document.getElementById('userName').textContent = user.name || user.email;
+    document.getElementById('welcomeMsg').textContent = 'Welcome back, ' + (user.name ? user.name.split(' ')[0] : 'there') + '!';
+
+    // Load counts
+    const props = getUserProperties(user.id);
+    const reqs = getUserServiceRequests(user.id);
+    document.getElementById('propCount').textContent = props.length;
+    document.getElementById('reqCount').textContent = reqs.length;
+
+    // Recent requests
+    if (reqs.length > 0) {
+      const recent = [...reqs].sort((a,b) => b.id - a.id).slice(0, 3);
+      document.getElementById('recentRequests').innerHTML = recent.map(r => {
+        const prop = getPropertyById(r.propertyId);
+        return `
+          <div class="request-card" onclick="window.location.href='request-detail.html?id=${r.id}'">
+            <div class="request-info">
+              <h4>${r.serviceType}</h4>
+              <p>${prop ? prop.name : 'No property'} &bull; Applied ${formatDate(r.appliedAt)}</p>
+            </div>
+            <div>${statusBadge(r.status)}</div>
+          </div>`;
+      }).join('');
+    }
+
+    // Properties preview
+    if (props.length > 0) {
+      document.getElementById('propList').innerHTML = props.slice(0,3).map(p => `
+        <div class="property-card" onclick="window.location.href='property-view.html?id=${p.id}'">
+          <div class="prop-type">${p.type}</div>
+          <h4>${p.name}</h4>
+          <p class="prop-address">${p.address}</p>
+          <div class="prop-meta">
+            <span>📍 ${p.district || p.state || 'N/A'}</span>
+            <span>📐 ${p.area || 'N/A'}</span>
+          </div>
+        </div>`).join('');
+    }
+  </script>
+</body>
+</html>

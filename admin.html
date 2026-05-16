@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a3558'/%3E%3Ctext y='22' x='16' text-anchor='middle' font-family='Segoe UI,Arial,sans-serif' font-weight='800' font-size='14' fill='white'%3EPS%3C/text%3E%3C/svg%3E">
+  <title>Admin Dashboard — Property Services</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .stat-bar { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:28px; }
+    .stat-box { background:white; border-radius:8px; padding:20px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+    .stat-box .stat-num { font-size:32px; font-weight:700; color:#1e3a5f; }
+    .stat-box .stat-lbl { font-size:13px; color:#888; margin-top:4px; }
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal-box { background:white; border-radius:12px; padding:32px; width:100%; max-width:640px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+    .modal-close { float:right; background:none; font-size:20px; color:#999; }
+    .modal-close:hover { color:#333; }
+    .filter-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+    .filter-bar input { flex:1; min-width:180px; padding:8px 12px; border:1.5px solid #d0d5dd; border-radius:6px; font-size:13px; }
+    .filter-bar select { padding:8px 12px; border:1.5px solid #d0d5dd; border-radius:6px; font-size:13px; cursor:pointer; }
+    .update-section { background:#f8fafc; border-radius:8px; padding:18px; margin-top:16px; }
+    .update-section h4 { font-size:14px; color:#1e3a5f; margin-bottom:12px; }
+    .note-input { width:100%; padding:9px 12px; border:1.5px solid #d0d5dd; border-radius:6px; font-size:13px; margin-bottom:10px; }
+    .status-btn { padding:7px 16px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all 0.2s; }
+    .status-btn.requested { background:#fef3c7; color:#92400e; }
+    .status-btn.started { background:#dbeafe; color:#1e40af; }
+    .status-btn.in_progress { background:#ede9fe; color:#5b21b6; }
+    .status-btn.completed { background:#d1fae5; color:#065f46; }
+    .status-btn:hover { filter:brightness(0.92); }
+    .status-btn.current { outline:3px solid #1e3a5f; outline-offset:2px; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <a href="admin.html" class="logo-link">
+          <div class="logo-icon">PS</div>
+          <div class="logo-text">PROPERTY SERVICES</div>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="admin.html" class="active"><span class="nav-icon">📊</span> All Requests</a>
+        <a href="admin-users.html"><span class="nav-icon">👥</span> Users</a>
+      </nav>
+      <button class="logout-btn" onclick="logout()"><span>🚪</span> Logout</button>
+    </aside>
+
+    <main class="main-content">
+      <div class="content-header">
+        <h1>Admin Dashboard</h1>
+        <div class="user-chip">
+          <div class="avatar">AD</div>
+          <span>Admin</span>
+        </div>
+      </div>
+
+      <div class="content-body">
+        <!-- Stats -->
+        <div class="stat-bar" id="statsBar"></div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <input type="text" id="searchInput" placeholder="Search by user, service, property..." oninput="renderTable()">
+          <select id="filterStatus" onchange="renderTable()">
+            <option value="">All Statuses</option>
+            <option value="requested">Requested</option>
+            <option value="started">Started</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+
+        <!-- Requests Table -->
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ref #</th>
+                <th>User</th>
+                <th>Property</th>
+                <th>Service</th>
+                <th>Applied</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Detail / Update Modal -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script>
+    const admin = getCurrentUser();
+    if (!admin || admin.role !== 'admin') window.location.href = 'auth.html';
+
+    let allReqs = [];
+
+    function load() {
+      allReqs = getServiceRequests();
+      renderStats();
+      renderTable();
+    }
+
+    function renderStats() {
+      const total = allReqs.length;
+      const byStatus = { requested:0, started:0, in_progress:0, completed:0 };
+      allReqs.forEach(r => { if (byStatus[r.status] !== undefined) byStatus[r.status]++; });
+
+      document.getElementById('statsBar').innerHTML = `
+        <div class="stat-box"><div class="stat-num">${total}</div><div class="stat-lbl">Total Requests</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:#92400e;">${byStatus.requested}</div><div class="stat-lbl">Requested</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:#1e40af;">${byStatus.started + byStatus.in_progress}</div><div class="stat-lbl">In Progress</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:#065f46;">${byStatus.completed}</div><div class="stat-lbl">Completed</div></div>`;
+    }
+
+    function renderTable() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const filterSt = document.getElementById('filterStatus').value;
+
+      const filtered = allReqs.filter(r => {
+        const user = getUserById(r.userId);
+        const prop = getPropertyById(r.propertyId);
+        const matchSearch = !search
+          || (user && user.name && user.name.toLowerCase().includes(search))
+          || r.serviceType.toLowerCase().includes(search)
+          || (prop && prop.name.toLowerCase().includes(search));
+        const matchStatus = !filterSt || r.status === filterSt;
+        return matchSearch && matchStatus;
+      }).sort((a,b) => b.id - a.id);
+
+      const tbody = document.getElementById('tableBody');
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:#aaa;">No requests found</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = filtered.map(r => {
+        const user = getUserById(r.userId);
+        const prop = getPropertyById(r.propertyId);
+        return `
+          <tr>
+            <td><strong>PS-${String(r.id).padStart(4,'0')}</strong></td>
+            <td>${user ? user.name || user.phone : '—'}</td>
+            <td>${prop ? prop.name : '—'}</td>
+            <td>${r.serviceType}</td>
+            <td>${formatDate(r.appliedAt)}</td>
+            <td>${statusBadge(r.status)}</td>
+            <td><button class="btn-outline" style="font-size:12px;padding:5px 14px;" onclick="openDetail(${r.id})">View / Update</button></td>
+          </tr>`;
+      }).join('');
+    }
+
+    function openDetail(id) {
+      const r = allReqs.find(x => x.id === id);
+      if (!r) return;
+      const user = getUserById(r.userId);
+      const prop = getPropertyById(r.propertyId);
+      const statuses = ['requested','started','in_progress','completed'];
+      const stepLabels = { requested:'Requested', started:'Started', in_progress:'In Progress', completed:'Completed' };
+
+      const detailsHtml = r.details && Object.keys(r.details).length
+        ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:8px;">
+            ${Object.entries(r.details).filter(([,v])=>v).map(([k,v]) =>
+              `<div><div style="font-size:11px;color:#aaa;text-transform:capitalize;">${k.replace(/([A-Z])/g,' $1')}</div>
+               <div style="font-size:13px;font-weight:500;">${v}</div></div>`).join('')}
+          </div>` : '<p style="font-size:13px;color:#aaa;margin-top:6px;">No additional details provided</p>';
+
+      const histHtml = [...r.statusHistory].reverse().map(h => `
+        <div class="history-item">
+          <h5>${stepLabels[h.status] || h.status}</h5>
+          ${h.note ? `<p>${h.note}</p>` : ''}
+          <span class="h-date">${formatDate(h.date)}</span>
+        </div>`).join('');
+
+      document.getElementById('modalContent').innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:20px;">
+          <div>
+            <h2 style="font-size:20px;color:#1e3a5f;margin-bottom:4px;">${r.serviceType}</h2>
+            <p style="font-size:13px;color:#aaa;">Ref #PS-${String(r.id).padStart(4,'0')} &bull; Applied ${formatDate(r.appliedAt)}</p>
+          </div>
+          ${statusBadge(r.status)}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+          <div style="background:#f8fafc;border-radius:6px;padding:14px;">
+            <div style="font-size:11px;color:#aaa;margin-bottom:4px;">USER</div>
+            <div style="font-size:14px;font-weight:600;">${user ? (user.name || 'Unnamed') : '—'}</div>
+            <div style="font-size:12px;color:#888;">${user ? user.phone : ''}</div>
+          </div>
+          <div style="background:#f8fafc;border-radius:6px;padding:14px;">
+            <div style="font-size:11px;color:#aaa;margin-bottom:4px;">PROPERTY</div>
+            <div style="font-size:14px;font-weight:600;">${prop ? prop.name : '—'}</div>
+            <div style="font-size:12px;color:#888;">${prop ? prop.type : ''}</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:18px;">
+          <h4 style="font-size:13px;color:#1e3a5f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Application Details</h4>
+          ${detailsHtml}
+        </div>
+
+        ${r.documents && r.documents.length ? `
+          <div style="margin-bottom:18px;">
+            <h4 style="font-size:13px;color:#1e3a5f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Documents Provided</h4>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              ${r.documents.map(d => `<span style="background:#f0f4ff;padding:3px 10px;border-radius:4px;font-size:12px;color:#1e3a5f;">✓ ${d}</span>`).join('')}
+            </div>
+          </div>` : ''}
+
+        <div style="margin-bottom:20px;">
+          <h4 style="font-size:13px;color:#1e3a5f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">History</h4>
+          <div class="history-list">${histHtml}</div>
+        </div>
+
+        <!-- Update Status -->
+        <div class="update-section">
+          <h4>Update Status</h4>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            ${statuses.map(s => `
+              <button class="status-btn ${s} ${s === r.status ? 'current' : ''}"
+                onclick="selectStatus('${s}','${id}')"
+                id="sbtn_${s}">${stepLabels[s]}</button>`).join('')}
+          </div>
+          <input type="text" class="note-input" id="statusNote_${id}" placeholder="Add a note (optional)...">
+          <button class="btn-primary" style="font-size:13px;padding:9px 20px;" onclick="applyStatusUpdate(${id})">Update Status</button>
+        </div>`;
+
+      document.getElementById('detailModal').classList.add('open');
+    }
+
+    let selectedNewStatus = '';
+
+    function selectStatus(status, reqId) {
+      selectedNewStatus = status;
+      document.querySelectorAll('[id^="sbtn_"]').forEach(btn => {
+        btn.classList.remove('current');
+      });
+      document.getElementById('sbtn_' + status).classList.add('current');
+    }
+
+    function applyStatusUpdate(reqId) {
+      if (!selectedNewStatus) { alert('Please select a status.'); return; }
+      const note = document.getElementById('statusNote_' + reqId).value.trim();
+      updateServiceStatus(reqId, selectedNewStatus, note);
+      allReqs = getServiceRequests();
+      closeModal();
+      renderStats();
+      renderTable();
+      selectedNewStatus = '';
+    }
+
+    function closeModal() {
+      document.getElementById('detailModal').classList.remove('open');
+      selectedNewStatus = '';
+    }
+
+    // Close modal on overlay click
+    document.getElementById('detailModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    load();
+  </script>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a3558'/%3E%3Ctext y='22' x='16' text-anchor='middle' font-family='Segoe UI,Arial,sans-serif' font-weight='800' font-size='14' fill='white'%3EPS%3C/text%3E%3C/svg%3E">
+  <title>Add Your Property — Property Services</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .onboard-wrap {
+      min-height: 100vh; background: linear-gradient(135deg, #0d1f3c 0%, #1e3a5f 100%);
+      display: flex; flex-direction: column; align-items: center; padding: 40px 20px;
+    }
+    .onboard-card { background: white; border-radius: 12px; width: 100%; max-width: 680px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .welcome-banner { text-align: center; margin-bottom: 30px; }
+    .welcome-banner .logo-icon { margin: 0 auto 12px; }
+    .welcome-banner h2 { font-size: 22px; color: #1e3a5f; margin-bottom: 6px; }
+    .welcome-banner p { font-size: 14px; color: #888; }
+    .skip-link { color: rgba(255,255,255,0.6); font-size: 13px; margin-top: 20px; }
+    .skip-link:hover { color: white; }
+  </style>
+</head>
+<body>
+  <div class="onboard-wrap">
+    <div class="onboard-card">
+      <div class="welcome-banner">
+        <div class="logo-icon">PS</div>
+        <h2>Welcome! Let's set up your property</h2>
+        <p>Add your first property to get started. You can add more properties later from your dashboard.</p>
+      </div>
+
+      <div class="form-card" style="margin-bottom:0;box-shadow:none;padding:0;">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Your Full Name *</label>
+            <input type="text" class="form-input" id="ownerName" placeholder="e.g. Rahul Sharma">
+          </div>
+          <div class="form-group">
+            <label>Property Name / Nickname *</label>
+            <input type="text" class="form-input" id="propName" placeholder="e.g. My Home, Office Block">
+          </div>
+          <div class="form-group">
+            <label>Property Type *</label>
+            <select class="form-input" id="propType">
+              <option value="">Select Type</option>
+              <option>Residential</option>
+              <option>Commercial</option>
+              <option>Agricultural</option>
+              <option>Industrial</option>
+              <option>Plot / Land</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Area (sq ft / sq m)</label>
+            <input type="text" class="form-input" id="propArea" placeholder="e.g. 1200 sq ft">
+          </div>
+          <div class="form-group full">
+            <label>Full Address *</label>
+            <input type="text" class="form-input" id="propAddress" placeholder="Flat/Door No., Street, Locality">
+          </div>
+          <div class="form-group">
+            <label>Village / Area</label>
+            <input type="text" class="form-input" id="propVillage" placeholder="Village or area name">
+          </div>
+          <div class="form-group">
+            <label>Taluka / Sub-district</label>
+            <input type="text" class="form-input" id="propTaluka" placeholder="Taluka">
+          </div>
+          <div class="form-group">
+            <label>District</label>
+            <input type="text" class="form-input" id="propDistrict" placeholder="District">
+          </div>
+          <div class="form-group">
+            <label>State</label>
+            <input type="text" class="form-input" id="propState" placeholder="State">
+          </div>
+          <div class="form-group">
+            <label>PIN Code</label>
+            <input type="text" class="form-input" id="propPincode" placeholder="6-digit PIN">
+          </div>
+          <div class="form-group">
+            <label>Survey / Khasra Number</label>
+            <input type="text" class="form-input" id="propSurvey" placeholder="Survey number (if known)">
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top:28px;">
+          <button class="btn-outline" onclick="skipOnboarding()">Skip for now</button>
+          <button class="btn-primary" onclick="saveProperty()">Save &amp; Continue →</button>
+        </div>
+      </div>
+    </div>
+    <a href="dashboard.html" class="skip-link" onclick="skipOnboarding()">Skip and go to dashboard</a>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script>
+    const user = getCurrentUser();
+    if (!user) window.location.href = 'auth.html';
+
+    function saveProperty() {
+      const ownerName = document.getElementById('ownerName').value.trim();
+      const propName = document.getElementById('propName').value.trim();
+      const propType = document.getElementById('propType').value;
+      const propAddress = document.getElementById('propAddress').value.trim();
+
+      if (!ownerName || !propName || !propType || !propAddress) {
+        alert('Please fill in the required fields (marked with *).');
+        return;
+      }
+
+      // Update user name if entered
+      if (ownerName) updateUser(user.id, { name: ownerName, isFirstTime: false });
+
+      addProperty({
+        userId: user.id,
+        name: propName,
+        ownerName: ownerName || user.name,
+        address: propAddress,
+        type: document.getElementById('propType').value,
+        area: document.getElementById('propArea').value,
+        surveyNumber: document.getElementById('propSurvey').value,
+        village: document.getElementById('propVillage').value,
+        taluka: document.getElementById('propTaluka').value,
+        district: document.getElementById('propDistrict').value,
+        state: document.getElementById('propState').value,
+        pincode: document.getElementById('propPincode').value
+      });
+
+      const pending = localStorage.getItem('ps_pending_service');
+      window.location.href = pending ? 'service-apply.html' : 'dashboard.html';
+    }
+
+    function skipOnboarding() {
+      updateUser(user.id, { isFirstTime: false });
+      const pending = localStorage.getItem('ps_pending_service');
+      window.location.href = pending ? 'service-apply.html' : 'dashboard.html';
+    }
+  </script>
+</body>
+</html>

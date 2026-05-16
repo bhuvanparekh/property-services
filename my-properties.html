@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Properties — Property Services</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a3558'/%3E%3Ctext y='22' x='16' text-anchor='middle' font-family='Segoe UI,Arial,sans-serif' font-weight='800' font-size='14' fill='white'%3EPS%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal-box { background:white; border-radius:12px; padding:32px; width:100%; max-width:620px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+    .modal-box h3 { font-size:18px; color:#1e3a5f; margin-bottom:20px; }
+    .modal-close { float:right; background:none; font-size:20px; color:#999; margin-top:-4px; }
+    .modal-close:hover { color:#333; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <a href="dashboard.html" class="logo-link">
+          <div class="logo-icon">PS</div>
+          <div class="logo-text">PROPERTY SERVICES</div>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><span class="nav-icon">🏠</span> Dashboard</a>
+        <a href="my-properties.html" class="active"><span class="nav-icon">🏗️</span> My Properties</a>
+        <a href="service-apply.html"><span class="nav-icon">📋</span> Apply for Service</a>
+        <a href="my-requests.html"><span class="nav-icon">📊</span> My Requests</a>
+      </nav>
+      <button class="logout-btn" onclick="logout()"><span>🚪</span> Logout</button>
+    </aside>
+
+    <main class="main-content">
+      <div class="content-header">
+        <h1>My Properties</h1>
+        <div class="user-chip">
+          <div class="avatar" id="userAvatar">?</div>
+          <span id="userName"></span>
+        </div>
+      </div>
+
+      <div class="content-body">
+        <div class="section-header">
+          <h2>All Properties</h2>
+          <button class="btn-primary" onclick="openAddModal()" style="font-size:14px;padding:9px 20px;">+ Add Property</button>
+        </div>
+        <div class="property-list" id="propList"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Property Modal -->
+  <div class="modal-overlay" id="addModal">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <h3>Add New Property</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Property Name *</label>
+          <input type="text" class="form-input" id="m_name" placeholder="e.g. My Home">
+        </div>
+        <div class="form-group">
+          <label>Property Type *</label>
+          <select class="form-input" id="m_type">
+            <option value="">Select</option>
+            <option>Residential</option><option>Commercial</option>
+            <option>Agricultural</option><option>Industrial</option><option>Plot / Land</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Full Address *</label>
+          <input type="text" class="form-input" id="m_address" placeholder="Door No., Street, Locality">
+        </div>
+        <div class="form-group">
+          <label>Owner Name</label>
+          <input type="text" class="form-input" id="m_owner" placeholder="Full name">
+        </div>
+        <div class="form-group">
+          <label>Area (sq ft)</label>
+          <input type="text" class="form-input" id="m_area" placeholder="e.g. 1200 sq ft">
+        </div>
+        <div class="form-group">
+          <label>Survey / Khasra Number</label>
+          <input type="text" class="form-input" id="m_survey" placeholder="Survey no.">
+        </div>
+        <div class="form-group">
+          <label>Village / Area</label>
+          <input type="text" class="form-input" id="m_village">
+        </div>
+        <div class="form-group">
+          <label>District</label>
+          <input type="text" class="form-input" id="m_district">
+        </div>
+        <div class="form-group">
+          <label>State</label>
+          <input type="text" class="form-input" id="m_state">
+        </div>
+        <div class="form-group">
+          <label>PIN Code</label>
+          <input type="text" class="form-input" id="m_pincode" maxlength="6">
+        </div>
+      </div>
+      <div class="form-actions" style="margin-top:20px;">
+        <button class="btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" onclick="addProp()">Save Property</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script>
+    const user = getCurrentUser();
+    if (!user || user.role === 'admin') window.location.href = 'auth.html';
+    document.getElementById('userAvatar').textContent = initials(user.name || user.email);
+    document.getElementById('userName').textContent = user.name || user.email;
+
+    function renderProps() {
+      const props = getUserProperties(user.id);
+      const el = document.getElementById('propList');
+      if (!props.length) {
+        el.innerHTML = `<div class="empty-state">
+          <span class="empty-icon">🏠</span>
+          <h3>No properties added yet</h3>
+          <p>Click "Add Property" to add your first property</p>
+        </div>`;
+        return;
+      }
+      el.innerHTML = props.map(p => {
+        const svcReqs = getServiceRequests().filter(r => r.propertyId === p.id);
+        return `
+          <div class="property-card" onclick="window.location.href='property-view.html?id=${p.id}'">
+            <div class="prop-type">${p.type}</div>
+            <h4>${p.name}</h4>
+            <p class="prop-address">${p.address}</p>
+            <div class="prop-meta">
+              <span>📍 ${p.district || p.state || 'N/A'}</span>
+              <span>📐 ${p.area || 'N/A'}</span>
+              <span>📋 ${svcReqs.length} service${svcReqs.length !== 1 ? 's' : ''}</span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function openAddModal() { document.getElementById('addModal').classList.add('open'); }
+    function closeModal() { document.getElementById('addModal').classList.remove('open'); }
+
+    function addProp() {
+      const name = document.getElementById('m_name').value.trim();
+      const type = document.getElementById('m_type').value;
+      const address = document.getElementById('m_address').value.trim();
+      if (!name || !type || !address) { alert('Please fill required fields.'); return; }
+      addProperty({
+        userId: user.id,
+        name, type, address,
+        ownerName: document.getElementById('m_owner').value || user.name,
+        area: document.getElementById('m_area').value,
+        surveyNumber: document.getElementById('m_survey').value,
+        village: document.getElementById('m_village').value,
+        district: document.getElementById('m_district').value,
+        state: document.getElementById('m_state').value,
+        pincode: document.getElementById('m_pincode').value,
+        taluka: ''
+      });
+      closeModal();
+      renderProps();
+      // Reset fields
+      ['m_name','m_type','m_address','m_owner','m_area','m_survey','m_village','m_district','m_state','m_pincode']
+        .forEach(id => document.getElementById(id).value = '');
+    }
+
+    renderProps();
+  </script>
+</body>
+</html>
